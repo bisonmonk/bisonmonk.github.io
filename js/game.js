@@ -1,17 +1,19 @@
 (function (root) {
   var Asteroids = root.Asteroids = (root.Asteroids || {});
 
-  var Game = Asteroids.Game = function (ctx){
-    this.ctx = ctx;
+  var Game = Asteroids.Game = function (ctx) {
+    this.ctx = canvas.getContext("2d");
     this.asteroids = [];
     this.ship = new Asteroids.Ship([450, 225],[0,0]);
     this.bullets = [];
-    this.bindKeyHandlers();
+    //this.bindKeyHandlers();
   }
 
   Game.DIM_X = 900;
   Game.DIM_Y = 450;
   Game.INTERVAL_ID;
+  Game.TIME = 0;
+  Game.LAST_FIRED_BULLET = 0;
 
   Game.prototype.addAsteroids = function(numAsteroids) {
     for (var i =0; i < numAsteroids; i++) {
@@ -76,7 +78,6 @@
     this.bullets.forEach(function(bullet) {
       bullet.draw(that.ctx);
     });
-    console.log("drawing");
     this.ship.draw(that.ctx);
   }
 
@@ -89,17 +90,27 @@
     });
     this.ship.move();
   }
+  
+  Game.prototype.checkKeys = function() {
+      if(key.isPressed("left")) {
+        this.ship.turn(1);
+      }
+      if(key.isPressed("right")) {
+        this.ship.turn(-1);
+      }
+      if(key.isPressed("up")) {
+        this.ship.power(-2);
+      }
+      if(key.isPressed("down")) {
+        this.ship.power(2);
+      }
 
-  Game.prototype.bindKeyHandlers = function() {
-    var that = this;
-
-    key('w', function() { that.ship.power(-2); });
-    key('s', function() { that.ship.power(2); });
-
-    key('a', function() { that.ship.turn(1); });
-    key('d', function() { that.ship.turn(-1); });
-
-    key('space', function() { that.fireBullet(); } );
+      if(key.isPressed("space")) {
+          if (Game.TIME - Game.LAST_FIRED_BULLET >= 0.2) {
+            this.fireBullet();
+            Game.LAST_FIRED_BULLET = Game.TIME;
+          }
+      }
   }
 
   Game.prototype.checkCollisions = function() {
@@ -122,19 +133,21 @@
   }
 
   Game.prototype.step = function() {
-    this.move();
+    this.checkKeys();
     this.checkCollisions();
     this.repositionLostAsteroids();
     this.repositionLostShip();
+    this.move();
     this.draw();
   }
 
   Game.prototype.start = function(numAsteroids) {
     var game = this;
-    //game.bindKeyHandlers();
     game.addAsteroids(numAsteroids);
     Game.INTERVAL_ID = setInterval(function() {
       game.step();
+      Game.TIME = Math.round(Game.TIME * 100) / 100;
+      Game.TIME += 0.03;
     }, 30);
   }
 
